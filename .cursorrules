@@ -1,0 +1,211 @@
+# Vector Database — Cursor Development Rules
+
+## Mission
+
+Build a vector database from first principles for learning and measurement.
+
+The project must progress from:
+1. exact brute-force cosine similarity,
+2. a clean insert/search/delete API,
+3. a self-implemented IVF-Flat approximate index,
+4. rigorous recall/latency/memory evaluation,
+5. advanced optimizations only after correctness is established.
+
+The goal is to understand what happens inside a vector database, not to hide complexity behind an existing vector-search library.
+
+## Non-Negotiable Technical Constraints
+
+- Do NOT use Pinecone.
+- Do NOT use FAISS.
+- Do NOT use Chroma.
+- Do NOT use sklearn.neighbors.
+- Do NOT use another ANN/vector-index library as a substitute for our implementation.
+- NumPy is allowed for vector arithmetic, array operations, and numerical computation.
+- The approximate index itself must be implemented by us.
+- The exact brute-force index is the ground truth.
+- Every optimization must be measurable against the exact implementation.
+- Prefer the simplest implementation that makes the underlying algorithm understandable.
+
+## Repository Workflow
+
+Before changing code:
+1. Read `PRD.md`.
+2. Read `architecture.md`.
+3. Read `design.md`.
+4. Read `phases.md`.
+5. Inspect the actual repository and relevant code.
+6. Identify the smallest logical change.
+7. Explain WHY before WHAT.
+
+After changing code:
+1. Run targeted tests.
+2. Run broader tests when appropriate.
+3. Run benchmarks for performance-related changes.
+4. Inspect the actual git diff.
+5. Check that unrelated files were not modified.
+6. Update documentation when architecture, behavior, or decisions change.
+7. Never claim a test passed unless it was actually run.
+
+## Algorithm Rules
+
+### Exact Index
+
+The exact index must:
+- store vectors and stable IDs,
+- calculate cosine similarity correctly,
+- return exact top-k results,
+- handle zero vectors explicitly,
+- support insert/search/delete,
+- remain the source of truth for recall evaluation.
+
+### IVF-Flat
+
+Implement IVF-Flat manually.
+
+Required conceptual stages:
+1. choose/build centroids,
+2. assign vectors to clusters,
+3. build inverted lists,
+4. assign a query to its nearest clusters,
+5. search only vectors in the selected clusters,
+6. merge candidates,
+7. return top-k.
+
+Do not silently fall back to brute force for normal IVF search.
+
+### Evaluation
+
+Every approximate-search result must be evaluated against exact top-k.
+
+Measure at minimum:
+- Recall@1
+- Recall@5
+- Recall@10
+- query latency
+- average latency
+- p50/p95/p99 latency when practical
+- candidate count / fraction scanned
+- index build time
+- memory usage when practical
+
+Always state the benchmark configuration.
+
+## API Rules
+
+The public index abstraction should make exact and approximate implementations interchangeable where practical:
+
+- `insert(id, vector)`
+- `search(query, k)`
+- `delete(id)`
+
+Additional methods are allowed only when they have a clear architectural reason.
+
+Deletion must not corrupt index invariants.
+
+If an operation is intentionally unsupported, document it rather than silently pretending it works.
+
+## Data Rules
+
+The MVP benchmark target is:
+- at least 50,000 vectors,
+- a documented vector dimensionality,
+- 500 query vectors,
+- exact top-10 ground truth.
+
+Prefer a real text corpus when practical. If embeddings are not available without introducing unnecessary infrastructure, use deterministic synthetic clustered vectors and document the limitation.
+
+Do not commit large generated datasets unless explicitly required. Store generation configuration and reproducibility information instead.
+
+## Correctness Rules
+
+Correctness comes before optimization.
+
+For each new index:
+- compare against brute force,
+- test small hand-checkable datasets,
+- test duplicate/similar vectors,
+- test negative values,
+- test zero-vector behavior,
+- test k larger than available active vectors,
+- test deletion,
+- test empty indexes,
+- test invalid dimensions.
+
+## Code Style
+
+- Keep modules focused.
+- Prefer explicit names over clever abstractions.
+- Use type hints.
+- Keep algorithmic logic readable.
+- Add comments only for non-obvious intent.
+- Do not add comments that merely restate code.
+- Avoid premature optimization.
+- Avoid unrelated refactors.
+
+## Performance Rules
+
+Do not optimize based on intuition.
+
+For every performance change:
+1. establish a baseline,
+2. change one logical variable,
+3. benchmark,
+4. compare recall and latency,
+5. document the result.
+
+Never improve latency by silently reducing correctness.
+
+## Dependency Rules
+
+Prefer the existing Python/NumPy stack.
+
+A new dependency requires justification:
+- Why NumPy is insufficient.
+- What capability it adds.
+- Why the learning objective requires it.
+- What maintenance cost it introduces.
+
+Do not add an ANN library merely to make the benchmark faster.
+
+## Documentation Rules
+
+When meaningful architectural decisions are made, record:
+- context,
+- options,
+- decision,
+- reason,
+- tradeoffs,
+- impact,
+- AI model/version when known.
+
+Keep the project documentation aligned with the actual implementation.
+
+## Scope Discipline
+
+One request = one logical change.
+
+Do not silently combine:
+- algorithm rewrites,
+- persistence,
+- API redesign,
+- benchmarking changes,
+- unrelated cleanup,
+- dependency upgrades.
+
+If additional work is discovered, report it separately.
+
+## Verification Language
+
+Use only:
+- PASS
+- FAIL
+- NOT RUN
+- NOT VERIFIED
+
+Never use vague claims such as "looks good" as verification.
+
+## Core Principle
+
+Understand the system before optimizing it.
+
+The exact index is not a disposable prototype. It is the correctness oracle against which every approximate optimization is judged.

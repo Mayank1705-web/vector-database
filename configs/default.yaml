@@ -1,0 +1,22 @@
+# Default configuration.
+#
+# Kept intentionally small during Phase 0-3. As Phases 4-8 land
+# (dataset generation, k-means, IVF, benchmarking), extend this file
+# rather than hard-coding numbers in scripts -- .cursorrules requires
+# every benchmark to state its configuration.
+
+dataset:
+  n_vectors: 50000        # MVP benchmark target (.cursorrules)
+  n_queries: 500
+  dim: 128
+  seed: 42
+  source: synthetic       # "synthetic" until a real text corpus is wired in
+
+ivf:
+  n_clusters: 100          # placeholder; tune once Phase 5 lands
+  n_probe: 8                # placeholder; swept in Phase 8
+  kmeans_iterations: 10
+
+evaluation:
+  k_values: [1, 5, 10]
+  latency_percentiles: [50, 95, 99]

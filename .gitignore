@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Data & generated artifacts (per .cursorrules: don't commit large
+# generated datasets; store generation config/reproducibility info
+# instead)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+experiments/results/*
+!experiments/results/.gitkeep
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
