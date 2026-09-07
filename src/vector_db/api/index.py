@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Protocol
 
-import numpy as np
 import numpy.typing as npt
 
 from vector_db.core.types import SearchResult
@@ -39,6 +38,14 @@ class VectorIndex:
         """Create a common API around a concrete index backend."""
         if backend is None:
             raise ValueError("backend must not be None.")
+
+        required_methods = ("insert", "search", "delete")
+
+        for method_name in required_methods:
+            if not callable(getattr(backend, method_name, None)):
+                raise TypeError(
+                    f"backend must implement callable '{method_name}'."
+                )
 
         self._backend = backend
 
