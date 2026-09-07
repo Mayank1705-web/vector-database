@@ -372,3 +372,74 @@ def test_benchmark_is_reproducible_for_recall_and_candidates() -> None:
     assert result_1.mean_candidate_fraction == pytest.approx(
         result_2.mean_candidate_fraction
     )
+def test_benchmark_measures_latency_separately_for_each_k(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each requested k should receive its own latency measurements."""
+    vectors = make_vectors()
+    queries = make_queries()
+
+    recorded_k_values: list[int] = []
+
+    from vector_db.approximate.ivf.index import IVFIndex
+
+    original_search = IVFIndex.search_with_stats
+
+    def wrapped_search(
+        self: IVFIndex,
+        query: np.ndarray,
+        k: int,
+    ):
+        recorded_k_values.append(k)
+        return original_search(self, query, k)
+
+    monkeypatch.setattr(
+        IVFIndex,
+        "search_with_stats",
+        wrapped_search,
+    )
+
+    result = benchmark(
+        vectors=vectors,
+        queries=queries,
+        n_clusters=2,
+        n_probe=1,
+        k_values=(1, 5, 10),
+        kmeans_iterations=5,
+        seed=42,
+    )
+
+    # Three queries × three requested k values.
+    assert recorded_k_values == [
+        1, 5, 10,
+        1, 5, 10,
+        1, 5, 10,
+    ]
+
+    assert set(result.latency) == {1, 5, 10}
+
+    for k in (1, 5, 10):
+        stats = result.latency[k]
+
+        assert stats.p50 >= 0.0
+        assert stats.p95 >= stats.p50
+        assert stats.p99 >= stats.p95
+        assert stats.minimum >= 0.0
+        assert stats.maximum >= stats.minimum
+        assert stats.mean >= 0.0
+        
+def test_benchmark_separate_k_searches_preserve_recall() -> None:
+    """Separate per-k searches should preserve the recall results."""
+    result = benchmark(
+        vectors=make_vectors(),
+        queries=make_queries(),
+        n_clusters=2,
+        n_probe=2,
+        k_values=(1, 5, 10),
+        kmeans_iterations=5,
+        seed=42,
+    )
+
+    assert result.recall[1] == pytest.approx(1.0)
+    assert result.recall[5] == pytest.approx(1.0)
+    assert result.recall[10] == pytest.approx(1.0)

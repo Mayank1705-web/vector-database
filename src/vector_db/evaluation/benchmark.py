@@ -279,30 +279,52 @@ def benchmark(
         ground_truth.append(exact_results)
 
     # ---------------------------------------------------------------
-    # 4. Run IVF queries and collect measurements.
+    # 4. Run IVF queries separately for each requested k.
     # ---------------------------------------------------------------
-    approximate_results: list[list[SearchResult]] = []
-    latencies: list[float] = []
+    approximate_results_by_k: dict[int, list[list[SearchResult]]] = {
+        k: [] for k in validated_k_values
+    }
+
+    latencies_by_k: dict[int, list[float]] = {
+        k: [] for k in validated_k_values
+    }
+
     candidate_counts: list[int] = []
 
     for query in query_data:
-        start = perf_counter()
+        query_candidate_count: int | None = None
 
-        results, candidate_count = ivf_index.search_with_stats(
-            query,
-            max_k,
-        )
+        for k in validated_k_values:
+            start = perf_counter()
 
-        elapsed = perf_counter() - start
-
-        if not isinstance(elapsed, Real) or elapsed < 0:
-            raise RuntimeError(
-                "Measured query latency must be non-negative."
+            results, candidate_count = ivf_index.search_with_stats(
+                query,
+                k,
             )
 
-        approximate_results.append(results)
-        latencies.append(float(elapsed))
-        candidate_counts.append(int(candidate_count))
+            elapsed = perf_counter() - start
+
+            if not isinstance(elapsed, Real) or elapsed < 0:
+                raise RuntimeError(
+                    "Measured query latency must be non-negative."
+                )
+
+            approximate_results_by_k[k].append(results)
+            latencies_by_k[k].append(float(elapsed))
+
+            if query_candidate_count is None:
+                query_candidate_count = int(candidate_count)
+            elif int(candidate_count) != query_candidate_count:
+                raise RuntimeError(
+                    "Candidate count changed between k values."
+                )
+
+        if query_candidate_count is None:
+            raise RuntimeError(
+                "No candidate count was recorded for the query."
+            )
+
+        candidate_counts.append(query_candidate_count)
 
     # ---------------------------------------------------------------
     # 5. Calculate Recall@k.
@@ -318,7 +340,7 @@ def benchmark(
             )
             for true_results, approximate in zip(
                 ground_truth,
-                approximate_results,
+                approximate_results_by_k[k],
             )
         ]
 
@@ -327,15 +349,14 @@ def benchmark(
         )
 
     # ---------------------------------------------------------------
-    # 6. Calculate latency statistics.
+    # 6. Calculate independent latency statistics for each k.
     # ---------------------------------------------------------------
     latency: dict[int, LatencyStats] = {}
 
     for k in validated_k_values:
-        # We execute each IVF query once using max_k. The measured
-        # search latency therefore represents the actual query cost
-        # of the benchmark run.
-        latency[k] = calculate_percentiles(latencies)
+        latency[k] = calculate_percentiles(
+            latencies_by_k[k]
+        )
 
     # ---------------------------------------------------------------
     # 7. Calculate candidate statistics.
@@ -355,7 +376,7 @@ def benchmark(
     mean_candidate_fraction = float(
         np.mean(candidate_fractions)
     )
-
+    
     return BenchmarkResult(
         n_vectors=n_vectors,
         n_queries=n_queries,
