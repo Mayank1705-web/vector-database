@@ -267,5 +267,84 @@ class IVFIndex:
 
         return results[:k]
 
+    def search_with_stats(
+        self,
+        query: npt.ArrayLike,
+        k: int,
+    ) -> tuple[list[SearchResult], int]:
+        """Search IVF and return results together with candidate count.
+
+        The candidate count is the number of vectors from the selected
+        probe clusters that receive exact cosine-similarity scoring.
+        """
+        if not isinstance(k, int) or isinstance(k, bool):
+            raise TypeError("k must be an integer.")
+
+        if k <= 0:
+            raise ValueError("k must be positive.")
+
+        validated_query = validate_vector(query)
+
+        if self._dimension is not None:
+            if validated_query.shape[0] != self._dimension:
+                raise ValueError(
+                    f"Query dimension {validated_query.shape[0]} does not "
+                    f"match expected dimension {self._dimension}."
+                )
+
+        if not self._vectors:
+            return [], 0
+
+        if not self.is_trained:
+            raise RuntimeError(
+                "IVFIndex must be trained before searching."
+            )
+
+        # Find the closest n_probe centroids.
+        centroid_scores = validated_query @ self._centroids.T
+
+        probe_clusters = np.argpartition(
+            -centroid_scores,
+            self._n_probe - 1,
+        )[: self._n_probe]
+
+        # Collect candidate IDs.
+        candidate_ids: list[int] = []
+
+        for cluster_id in probe_clusters:
+            candidate_ids.extend(
+                self._inverted_lists.get(int(cluster_id))
+            )
+
+        candidate_count = len(candidate_ids)
+
+        if not candidate_ids:
+            return [], 0
+
+        # Retrieve candidate vectors.
+        candidate_vectors = np.vstack(
+            [self._vectors[vector_id] for vector_id in candidate_ids]
+        )
+
+        # Exact similarity scoring.
+        scores = batch_cosine_similarity(
+            validated_query,
+            candidate_vectors,
+        )
+
+        results = [
+            SearchResult(
+                id=vector_id,
+                score=float(score),
+            )
+            for vector_id, score in zip(candidate_ids, scores)
+        ]
+
+        # Deterministic ordering.
+        results.sort(
+            key=lambda result: (-result.score, result.id)
+        )
+
+        return results[:k], candidate_count
 
 __all__ = ["IVFIndex"]
