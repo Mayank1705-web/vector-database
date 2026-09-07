@@ -185,14 +185,18 @@ class BruteForceIndex:
 
         k_eff = min(k, scores.shape[0])
 
-        # Partial selection: find the k_eff largest scores in O(N),
-        # then sort only those k_eff candidates.
-        if k_eff < scores.shape[0]:
-            top_idx = np.argpartition(-scores, k_eff - 1)[:k_eff]
-        else:
-            top_idx = np.arange(scores.shape[0])
+        # Sort all active vectors deterministically by:
+        # 1. descending cosine similarity
+        # 2. ascending vector ID for ties
+        #
+        # The exact index is the correctness oracle, so tied scores must
+        # always produce the same result regardless of NumPy partitioning.
+        order = sorted(
+            range(scores.shape[0]),
+            key=lambda i: (-scores[i], int(active_ids[i])),
+        )
 
-        order = sorted(top_idx, key=lambda i: (-scores[i], int(active_ids[i])))
+        order = order[:k_eff]
 
         return [
             SearchResult(id=int(active_ids[i]), score=float(scores[i]))
