@@ -39,7 +39,6 @@ def main() -> None:
     probe_values = [1, 2, 4, 8, 16, 32, 64, 100]
 
     results = []
-
     total_start = time.perf_counter()
 
     for n_probe in probe_values:
