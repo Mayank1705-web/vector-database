@@ -9,6 +9,7 @@ dependencies = [
     "psutil>=7.0",
     "fastapi>=0.115",
     "uvicorn>=0.30",
+    "sentence-transformers>=5.0",
 ]
 
 [project.optional-dependencies]
