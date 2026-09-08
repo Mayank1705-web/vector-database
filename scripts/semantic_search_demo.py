@@ -154,7 +154,42 @@ def main() -> None:
     print(f"Dimension:       {dimension}")
     print(f"Clusters:        {N_CLUSTERS}")
     print(f"Probes:          {N_PROBE}")
+    print()
+    print("Type a statement to search.")
+    print("Type 'exit' or 'quit' to stop.")
 
+    while True:
+        try:
+            query = input("\nQuery: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+
+        if query.lower() in {"exit", "quit"}:
+            break
+
+        if not query:
+            print("Please enter a non-empty query.")
+            continue
+
+        try:
+            query_vector = text_to_vector(query, model)
+
+            results = index.search(
+                query_vector,
+                k=TOP_K,
+            )
+
+            print_results(
+                query=query,
+                results=results,
+                statements=statements,
+            )
+
+        except (TypeError, ValueError) as exc:
+            print(f"Error: {exc}")
+
+    print("\nDemo finished.")
 
 if __name__ == "__main__":
     main()
