@@ -13,8 +13,8 @@ dataset:
   source: synthetic       # "synthetic" until a real text corpus is wired in
 
 ivf:
-  n_clusters: 100          # placeholder; tune once Phase 5 lands
-  n_probe: 8                # placeholder; swept in Phase 8
+  n_clusters: 100
+  n_probe: 2
   kmeans_iterations: 10
 
 evaluation:
