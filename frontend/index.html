@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vector DB Lab — FastAPI Client</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,680&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker"><span id="healthDot"></span> vector db lab — connected to FastAPI</p>
+  <h1>Search your own vector database</h1>
+  <p class="sub">
+    This frontend is a client for the project's <b>Python / NumPy vector database</b>.
+    Search, insert, and delete operations are sent to the FastAPI backend; the browser
+    does not implement vector search itself.
+  </p>
+
+  <section class="system-card">
+    <div class="section-head">
+      <h2>System status</h2>
+      <span class="section-note" id="healthText">Checking API…</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">API</div><div class="stat-value" id="statApi">—</div></div>
+      <div class="stat"><div class="stat-label">index</div><div class="stat-value">IVF-Flat</div></div>
+      <div class="stat"><div class="stat-label">dimension</div><div class="stat-value">128</div></div>
+      <div class="stat"><div class="stat-label">clusters</div><div class="stat-value">100</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Vector search</h2>
+      <span class="section-note">POST /search</span>
+    </div>
+
+    <form class="query-form" id="queryForm">
+      <label class="field-label" for="queryInput">Query vector</label>
+      <textarea id="queryInput" spellcheck="false"
+        placeholder="Paste a 128-dimensional vector, e.g. [0.12, -0.04, ...]"></textarea>
+
+      <div class="controls">
+        <div class="control">
+          <label for="kInput">top-k</label>
+          <input type="number" id="kInput" min="1" max="100" value="10">
+        </div>
+        <button type="submit" class="primary" id="searchButton">Search</button>
+        <button type="button" class="ghost" id="sampleButton">Load sample vector</button>
+      </div>
+    </form>
+    <p class="status-line" id="searchStatus"></p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Results</h2>
+      <span class="section-note">Results returned by the Python backend</span>
+    </div>
+    <div class="results-panel">
+      <div class="results-header">
+        <span>Rank</span><span>Vector ID</span><span>Cosine similarity</span>
+      </div>
+      <div id="resultsList">
+        <p class="empty-note">Run a search to see results.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Manage the index</h2>
+      <span class="section-note">POST /insert · DELETE /delete/{id}</span>
+    </div>
+
+    <div class="manage-grid">
+      <form class="manage-form" id="insertForm">
+        <label class="field-label" for="insertId">Vector ID</label>
+        <input type="number" id="insertId" min="0" step="1" placeholder="e.g. 50001">
+
+        <label class="field-label" for="insertVector">128-dimensional vector</label>
+        <textarea id="insertVector" spellcheck="false"
+          placeholder="[0.12, -0.04, ...]"></textarea>
+
+        <button type="submit" class="primary">Insert vector</button>
+        <p class="status-line" id="insertStatus"></p>
+      </form>
+
+      <form class="manage-form" id="deleteForm">
+        <label class="field-label" for="deleteId">Vector ID</label>
+        <input type="number" id="deleteId" min="0" step="1" placeholder="e.g. 50001">
+        <button type="submit" class="danger">Delete vector</button>
+        <p class="status-line" id="deleteStatus"></p>
+      </form>
+    </div>
+  </section>
+
+  <section class="architecture">
+    <div class="section-head">
+      <h2>How this demo works</h2>
+      <span class="section-note">real repository path</span>
+    </div>
+    <div class="pipeline">
+      <div class="node">Browser UI</div>
+      <div class="arrow">→</div>
+      <div class="node">FastAPI</div>
+      <div class="arrow">→</div>
+      <div class="node">VectorIndex</div>
+      <div class="arrow">→</div>
+      <div class="node accent">IVF-Flat</div>
+      <div class="arrow">→</div>
+      <div class="node">NumPy cosine</div>
+    </div>
+    <p class="caption">
+      The frontend sends vectors to the existing API. IVF-Flat performs centroid selection,
+      probes the configured clusters, computes exact cosine similarity on candidates, and
+      returns the ranked results. The benchmark's brute-force implementation remains the
+      correctness oracle; this UI does not fake or reproduce benchmark measurements.
+    </p>
+  </section>
+
+  <footer>
+    <p><b>Semantic search:</b> the repository's <code>scripts/semantic_search_demo.py</code>
+    uses <code>all-MiniLM-L6-v2</code> to turn text into real 384-dimensional embeddings.
+    The current API frontend intentionally accepts vectors because the existing FastAPI
+    contract exposes vector insert/search operations.</p>
+    <p>Start the backend from the repository root, then serve this folder with a local HTTP server.</p>
+  </footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
