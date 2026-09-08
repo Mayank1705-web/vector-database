@@ -158,60 +158,62 @@ Return Top-K results
 
 ---
 
-# 5. Repository Structure
-
-```text
 vector-database/
 |
 |--- configs/
 |   |--- default.yaml
 |
-├-- docs/
-|   ├-- Constraints.md
-|   ├-- Decisions.md
-|   ├-- Flow.md
-|   ├-- Handover.md
-|   ├-- ROLLBACK.md
-|   ├-- TEST_CHECKLIST.md
+|--- docs/
+|   |--- Constraints.md
+|   |--- Decisions.md
+|   |--- Flow.md
+|   |--- Handover.md
+|   |--- ROLLBACK.md
+|   |--- TEST_CHECKLIST.md
 |   |--- features/
 |       |--- FEATURE-vector-index.md
 |
-├-- experiments/
-|   ├-- notebooks/
+|--- experiments/
+|   |--- notebooks/
 |   |--- results/
 |
-├-- scripts/
-|   ├-- benchmark.py
-|   ├-- build_index.py
-|   ├-- experiment_n_clusters.py
-|   ├-- experiment_n_probe.py
-|   ├-- generate_data.py
-|   ├-- measure_memory.py
-|   |--- semantic_search_demo.py
+|--- frontend/
+|   |--- app.js
+|   |--- index.html
+|   |--- README.md
+|   |--- style.css
 |
-├-- src/
+|--- scripts/
+|   |--- benchmark.py
+|   |--- build_index.py
+|   |--- experiment_n_clusters.py
+|   |--- experiment_n_probe.py
+|   |--- generate_data.py
+|   |--- measure_memory.py
+|   |--- semantic_search_demo.py
+|   |--- serve_frontend.py
+|
+|--- src/
 |   |--- vector_db/
-|       ├-- api/
-|       ├-- approximate/
+|       |--- api/
+|       |--- approximate/
 |       |   |--- ivf/
-|       ├-- core/
-|       ├-- evaluation/
-|       ├-- exact/
+|       |--- core/
+|       |--- evaluation/
+|       |--- exact/
 |       |--- storage/
 |
-├-- tests/
-|   ├-- benchmarks/
-|   ├-- integration/
+|--- tests/
+|   |--- benchmarks/
+|   |--- integration/
 |   |--- unit/
 |
-├-- architecture.md
-├-- design.md
-├-- phases.md
-├-- PRD.md
-├-- pyproject.toml
+|--- architecture.md
+|--- design.md
+|--- phases.md
+|--- PRD.md
+|--- pyproject.toml
 |--- README.md
-```
-
 ---
 
 # 6. Exact Brute-Force Search
@@ -739,8 +741,8 @@ Example request:
 
 ```json
 {
-  "id": 1,
-  "vector": [0.1, 0.2, 0.3]
+  "id": 50001,
+  "vector": [0.0, 0.0, "... 128 values ..."]
 }
 ```
 
@@ -755,7 +757,7 @@ Example request:
 
 ```json
 {
-  "query": [0.1, 0.2, 0.3],
+  "query": [0.0, 0.0, "... 128 values ..."],
   "k": 5
 }
 ```
@@ -783,7 +785,22 @@ The HTTP layer provides a simple interface around the underlying vector-index fu
 
 ---
 
-# 19. Installation
+# 19. Frontend Demo
+
+The repository includes a lightweight HTML/CSS/JavaScript frontend that connects to the
+existing FastAPI server.
+
+The frontend is intentionally a thin client. It does not reimplement IVF-Flat, K-means,
+cosine similarity, or vector storage in JavaScript.
+
+## Start the backend
+
+From the repository root:
+
+```powershell
+python -m uvicorn vector_db.api.server:app --host 127.0.0.1 --port 8000
+
+# 20. Installation
 
 ## Requirements
 
@@ -828,7 +845,7 @@ python -m pip install psutil
 
 ---
 
-# 20. Configuration
+# 21. Configuration
 
 The default configuration is stored in:
 
@@ -860,7 +877,7 @@ The experiments independently vary `n_probe` and `n_clusters`.
 
 ---
 
-# 21. Reproducibility
+# 22. Reproducibility
 
 The project is designed so that the main benchmark can be regenerated from a clean checkout.
 
@@ -925,7 +942,7 @@ Exact latency measurements can vary across machines and runtime environments eve
 
 ---
 
-# 22. Running Experiments
+# 23. Running Experiments
 
 ## `n_probe` experiment
 
@@ -967,7 +984,7 @@ This evaluates the effect of index granularity on:
 
 ---
 
-# 23. Memory Measurement
+# 24. Memory Measurement
 
 The project includes a process-level memory measurement script:
 
@@ -999,7 +1016,7 @@ Results can vary between environments.
 
 ---
 
-# 24. Testing
+# 25. Testing
 
 Run the complete test suite:
 
@@ -1035,7 +1052,7 @@ The test suite covers areas including:
 
 ---
 
-# 25. Design Decisions
+# 26. Design Decisions
 
 ## Why brute force?
 
@@ -1081,7 +1098,7 @@ A real embedding model makes the semantic-search demonstration more meaningful t
 
 ---
 
-# 26. Limitations
+# 27. Limitations
 
 This is an **educational vector database**, not a production database.
 
@@ -1107,7 +1124,7 @@ Current limitations include:
 
 ---
 
-# 27. What This Project Demonstrates
+# 28. What This Project Demonstrates
 
 The project implements the basic vector-search pipeline end-to-end:
 
@@ -1167,7 +1184,7 @@ The experiments make these relationships measurable instead of treating vector s
 
 ---
 
-# 28. Summary of Verified Results
+# 29. Summary of Verified Results
 
 For the primary benchmark configuration:
 
@@ -1234,7 +1251,7 @@ when evaluated with `n_probe=8`.
 
 ---
 
-# 29. Conclusion
+# 30. Conclusion
 
 This project builds a small vector database from first principles and exposes the mechanisms that are normally hidden inside production vector-search systems.
 
